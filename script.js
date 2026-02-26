@@ -1,146 +1,144 @@
-window.onerror = function (message, source, lineno, colno, error) {
-    alert(`Global Error: ${message} at line ${lineno}`);
+const IEC_TABLE = {
+    66: {
+        "Single Point Bonding": { 150: 374, 185: 377, 240: 416, 600: 564 }
+    },
+    132: {
+        "Cross Bonding": { 400: 542, 800: 1004, 1000: 1136, 1200: 1210, 1600: 1352 }
+    },
+    138: {
+        "Cross Bonding": { 300: 608, 630: 892, 800: 998 }
+    },
+    154: {
+        "Cross Bonding": { 400: 683, 600: 853, 800: 993, 1000: 1097, 1200: 1167, 2000: 1384, 2500: 1590 },
+        "Single Point Bonding": { 400: 517 }
+    },
+    220: {
+        "Cross Bonding": { 630: 873, 1200: 1215 },
+        "Single Point Bonding": { 630: 583 }
+    }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        // DOM Elements
-        const voltageSelect = document.getElementById('voltage');
-        const sqSelect = document.getElementById('sq');
-        const circuitsInput = document.getElementById('circuits');
-        const depthInput = document.getElementById('depth');
-        const pfInput = document.getElementById('pf');
-        // const calculateBtn = document.getElementById('calculate-btn'); // Removed
-        const resultAmpere = document.getElementById('result-ampere');
-        const resultMva = document.getElementById('result-mva');
-        const errorMessage = document.getElementById('error-message');
-
-        if (!voltageSelect || !sqSelect) {
-            console.error("Critical elements missing");
-            return;
+let anchors = [];
+for (let v in IEC_TABLE) {
+    for (let b in IEC_TABLE[v]) {
+        for (let a in IEC_TABLE[v][b]) {
+            anchors.push({ v: parseFloat(v), b: b, a: parseFloat(a), i: IEC_TABLE[v][b][a] });
         }
-
-        // Constants & Data
-        // Insulation Thickness Estimation (mm) based on Voltage (kV)
-        // Approximation derived from standard cable data
-        const insulationThickness = {
-            66: 11,
-            132: 16,
-            154: 19,
-            220: 23,
-            345: 29
-        };
-
-        // Inputs that auto-trigger calculation
-        [voltageSelect, sqSelect, circuitsInput, depthInput, pfInput].forEach(el => {
-            if (el) {
-                el.addEventListener('change', calculateCableCapacity);
-                el.addEventListener('input', calculateCableCapacity);
-            }
-        });
-
-
-        // Button removed, auto-calculation is sufficient
-        // calculateBtn.addEventListener('click', () => { ... });
-
-        function calculateCableCapacity() {
-            try {
-                // Clear errors
-                if (errorMessage) {
-                    errorMessage.classList.add('hidden');
-                    errorMessage.textContent = '';
-                }
-
-                // 1. Get Inputs
-                const voltage = parseInt(voltageSelect.value);
-                const sq = parseInt(sqSelect.value);
-                const n = parseInt(circuitsInput.value);
-                const depth = parseFloat(depthInput.value);
-                const pf = parseFloat(pfInput.value);
-
-                // Validation
-                if (isNaN(n) || n <= 0) throw new Error("Circuits must be > 0");
-                if (isNaN(depth) || depth <= 0) throw new Error("Depth must be > 0");
-                if (isNaN(pf) || pf < 0 || pf > 1) throw new Error("PF must be 0-1");
-
-                // 2. Calculate Cable Parameters (Dc, Di, R0)
-                // Dc (Conductor Diameter) approximation: d = sqrt(4 * A / pi).
-                // Multiply by ~1.1 for conductor construction (stranding/compacting factor)
-                const dc_approx = Math.sqrt(4 * sq / Math.PI) * 1.1;
-                // Round to 1 decimal place
-                const dc = Math.round(dc_approx * 10) / 10;
-
-                // Di (Insulation Diameter) = Dc + 2 * Thickness
-                const thickness = insulationThickness[voltage] || (voltage * 0.1); // Fallback
-                const di = dc + 2 * thickness;
-
-                // R0 (DC Resistance at 20C)
-                // R = rho / A. For Copper, ~ 18.51 Ohm*mm^2/km
-                // R0 (Ohm/m) = (18.51 / sq) / 1000
-                const r0 = (18.51 / sq) / 1000;
-
-                // 3. Calculation
-                const f = 60;
-                const alpha20 = 0.00393;
-
-                // AC Resistance (90°C)
-                const r_ac = r0 * (1 + alpha20 * 70) * 1.059;
-
-                // Dielectric Loss
-                const u0 = (voltage * 1000) / Math.sqrt(3);
-                const c = (2 * Math.PI * 8.854e-12 * 2.3) / Math.log(di / dc) * 1000;
-                // wd calculation (results in W/km because c is F/km)
-                const wd_per_km = 2 * Math.PI * f * c * Math.pow(u0, 2) * 0.001;
-                const wd = wd_per_km / 1000; // Convert to W/m for thermal calculation
-
-                // Thermal Resistance
-                const t1 = (3.5 / (2 * Math.PI)) * Math.log(di / dc);
-                const t3 = (6.0 / (2 * Math.PI)) * Math.log((di + 20) / di);
-
-                const t4_base_map = { 1: 1.163, 2: 1.619, 3: 1.641, 4: 1.885 };
-                let t4_base = t4_base_map[n] !== undefined ? t4_base_map[n] : (1.885 + (n - 4) * 0.1);
-
-                const t4 = t4_base + (0.9 / (2 * Math.PI)) * Math.log(depth / 1200.0) * (1 + 0.1 * (n - 1));
-
-                const lambda1 = 0.291;
-
-                // 4. Result
-                const delta_theta = 65;
-                const numerator = delta_theta - wd * (0.5 * t1 + t3 + t4);
-                const denominator = r_ac * (t1 + (1 + lambda1) * (t3 + t4));
-
-                if (numerator <= 0) {
-                    throw new Error("Thermal imbalance: numerator <= 0");
-                }
-
-                const i_ampere = Math.sqrt(numerator / denominator);
-                const p_mva = Math.sqrt(3) * voltage * i_ampere * n * pf / 1000.0;
-
-                // Update UI
-                updateValue(resultAmpere, i_ampere);
-                updateValue(resultMva, p_mva);
-
-            } catch (e) {
-                showError(e.message);
-                console.error(e);
-            }
-        }
-
-        function showError(msg) {
-            if (errorMessage) {
-                errorMessage.textContent = msg;
-                errorMessage.classList.remove('hidden');
-            }
-        }
-
-        function updateValue(element, value) {
-            if (element) element.textContent = value.toFixed(1);
-        }
-
-        // Initial run
-        calculateCableCapacity();
-
-    } catch (err) {
-        alert("Script Initialization Error: " + err.message);
     }
+}
+
+function getBaseCurrent(v, a, depth, b) {
+    let K = 35.0;
+    // f(depth): logarithmically decays as depth increases
+    let depthFactor = 1 - 0.1 * Math.log(depth / 1500);
+    if (depthFactor < 0.1) depthFactor = 0.1; // lower boundary to prevent negatives
+    // f(voltage): mild power-law
+    let voltageFactor = Math.pow(154 / v, 0.1);
+    // f(bonding)
+    let bondingFactor = (b === "Single Point Bonding") ? 0.8 : 1.0;
+
+    return K * Math.sqrt(a) * depthFactor * voltageFactor * bondingFactor;
+}
+
+// 3. Calibration to table: pre-calculate anchor C factors
+anchors.forEach(anch => {
+    let i_base = getBaseCurrent(anch.v, anch.a, 1500, anch.b);
+    anch.c = anch.i / i_base;
+});
+
+function calculate() {
+    let v = parseFloat(document.getElementById('voltage').value);
+    let a = parseFloat(document.getElementById('area').value);
+    let b = document.getElementById('bonding').value;
+    let depth = parseFloat(document.getElementById('depth').value);
+    let circuits = parseInt(document.getElementById('circuits').value);
+    let pf = parseFloat(document.getElementById('pf').value);
+
+    if (isNaN(v) || isNaN(a) || isNaN(depth) || depth <= 0 || isNaN(circuits) || circuits <= 0 || isNaN(pf) || pf <= 0) {
+        displayResults(0, 0, 0);
+        return;
+    }
+
+    let i_final = getCalibratedCurrent(v, a, depth, b, circuits);
+
+    // Rule: Single Point Bonding must never exceed Cross Bonding
+    if (b === "Single Point Bonding") {
+        let i_cb = getCalibratedCurrent(v, a, depth, "Cross Bonding", circuits);
+        if (i_final > i_cb) {
+            i_final = i_cb;
+        }
+    }
+
+    // 5. Power Calculation
+    let s = Math.sqrt(3) * v * i_final / 1000;
+    let p = s * pf;
+
+    displayResults(i_final, s, p);
+}
+
+function getCalibratedCurrent(v, a, depth, b, circuits) {
+    // 1. Anchor Override (highest priority)
+    if (depth === 1500) {
+        let exactAnchor = anchors.find(x => x.v === v && x.a === a && x.b === b);
+        if (exactAnchor) {
+            return exactAnchor.i * getCircuitDerating(circuits);
+        }
+    }
+
+    let validAnchors = anchors.filter(x => x.b === b);
+    if (validAnchors.length === 0) {
+        validAnchors = anchors.filter(x => x.b === "Cross Bonding");
+    }
+
+    let c_interp = 1.0;
+    let exactPoint = validAnchors.find(x => x.v === v && x.a === a);
+
+    // 3. Interp calibration factor
+    if (exactPoint) {
+        c_interp = exactPoint.c;
+    } else if (validAnchors.length > 0) {
+        let sumW = 0, sumWC = 0;
+        validAnchors.forEach(anch => {
+            let dv = (v - anch.v) / 154.0;
+            let da = (a - anch.a) / 1000.0;
+            let distSq = dv * dv + da * da;
+            let w = 1.0 / distSq;
+            sumW += w;
+            sumWC += w * anch.c;
+        });
+        if (sumW > 0) c_interp = sumWC / sumW;
+    }
+
+    let i_base = getBaseCurrent(v, a, depth, b);
+    let i_calibrated = i_base * c_interp;
+
+    // 4. Circuit Derating
+    return i_calibrated * getCircuitDerating(circuits);
+}
+
+function getCircuitDerating(circuits) {
+    if (circuits === 1) return 1.00;
+    if (circuits === 2) return 0.89;
+    if (circuits === 3) return 0.87;
+    return 0.83;
+}
+
+function displayResults(i, s, p) {
+    i = (isNaN(i) || i < 0) ? 0 : i;
+    s = (isNaN(s) || s < 0) ? 0 : s;
+    p = (isNaN(p) || p < 0) ? 0 : p;
+
+    document.getElementById('out-current').innerText = i.toFixed(1) + " A";
+    document.getElementById('out-apparent').innerText = s.toFixed(1) + " MVA";
+    document.getElementById('out-active').innerText = p.toFixed(1) + " MW";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', calculate);
+        input.addEventListener('change', calculate);
+    });
+
+    calculate();
 });

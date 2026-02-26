@@ -1,0 +1,10 @@
+# Continuous Current Ratings Calculator
+
+- [ ] Create `index.html`, `styles.css`, and `script.js`
+- [ ] Build the UI (Sleek dark mode, responsive, auto-updating inputs)
+- [ ] Implement Calculator Logic
+  - [ ] Anchor table base logic (`getBaseCurrent`)
+  - [ ] Exact match anchor logic
+  - [ ] Linear interpolation for calibration factors
+  - [ ] Circuit derating and power calculations
+- [ ] Verify validation rules (No NaN, Non-negative, Single <= Cross bonding)

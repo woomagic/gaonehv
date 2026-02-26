@@ -1,0 +1,38 @@
+# Implementation Plan: Continuous Current Ratings Calculator
+
+## Goal Description
+Develop a single-page web calculator for Continuous Current Ratings based on the IEC 60287 anchor table. The calculator will provide smooth, continuous outputs for any selected inputs by interpolating calibration factors from the exact anchor points to a continuous base formula. The UI will feature a sleek, dynamic, and premium dark-mode aesthetic with auto-updating results (no "Calculate" button).
+
+## Proposed Changes
+
+### Calculator Files
+
+#### [NEW] [index.html](file:///c:/Users/gaonuser/.gemini/antigravity/brain/62403a8b-9fe9-42b6-912d-62b32269fd24/index.html)
+- Define the HTML structure for the calculator.
+- Include predefined inputs: Voltage, Conductor Size, Bonding Method, Number of Circuits, Burial Depth, and Power Factor.
+- Include outputs: Current Ratings, Apparent Power, Active Power.
+- Add footer with fixed constraints and Gaon Cable Co., Ltd. branding.
+
+#### [NEW] [styles.css](file:///c:/Users/gaonuser/.gemini/antigravity/brain/62403a8b-9fe9-42b6-912d-62b32269fd24/styles.css)
+- Implement premium dark mode design using modern CSS (variables, grid/flexbox, transitions, glassmorphism).
+- Ensure high-quality aesthetics and typography.
+
+#### [NEW] [script.js](file:///c:/Users/gaonuser/.gemini/antigravity/brain/62403a8b-9fe9-42b6-912d-62b32269fd24/script.js)
+- Implement math logic:
+  - Base formula accounting for depth, area, voltage, and bonding continuously.
+  - Exactly match calculations at anchor table points.
+  - Linearly interpolate a calibration factor for selected scenarios.
+  - Automatic updates on field changes (`input` and `change` event listeners).
+  - Rules validation to prevent invalid numbers and enforce physical constraints.
+
+## Verification Plan
+
+### Automated Tests
+- None are specified as this is a standalone HTML application.
+
+### Manual Verification
+- Open `index.html` in the browser simulation.
+- Cross-check results against the 1500mm anchor tables.
+- Vary the burial depth to verify the monotonic log-based output decay.
+- Verify `Single Point Bonding` never exceeds `Cross Bonding` rating.
+- Verify real-time updates function seamlessly when modifying the Area or Voltage inputs.

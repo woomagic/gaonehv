@@ -1,102 +1,109 @@
 <!DOCTYPE html>
-<html lang="ko">
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High Voltage Cable Capacity Calculator</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Continuous Current Ratings Calculator</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-    <div class="background-glob"></div>
     <div class="container">
-        <header>
-            <h1>High Voltage Cable Capacity</h1>
-            <p class="subtitle">Real-time Ampacity & Transmission Capacity Calculator</p>
-        </header>
-
-        <main class="calculator-grid">
-            <section class="input-section glass-panel">
-                <h2>Configuration</h2>
-
-                <div class="input-group">
+        <div class="header">
+            <h1>Continuous Current Ratings Calculator</h1>
+            <p>This calculator is for easy verification purposes only.</p>
+        </div>
+        
+        <div class="content">
+            <div class="inputs-section">
+                <div class="form-group">
                     <label for="voltage">Nominal Voltage (kV)</label>
-                    <select id="voltage">
-                        <option value="66">66 kV</option>
-                        <option value="132">132 kV</option>
-                        <option value="154" selected>154 kV</option>
-                        <option value="220">220 kV</option>
-                        <option value="345">345 kV</option>
-                    </select>
+                    <div class="input-wrapper">
+                        <select id="voltage">
+                            <option value="66">66</option>
+                            <option value="132">132</option>
+                            <option value="138">138</option>
+                            <option value="154" selected>154</option>
+                            <option value="220">220</option>
+                        </select>
+                    </div>
                 </div>
-
-                <div class="input-group">
-                    <label for="sq">Nominal Area (mm²)</label>
-                    <select id="sq">
-                        <option value="400">400 mm²</option>
-                        <option value="600">600 mm²</option>
-                        <option value="630">630 mm²</option>
-                        <option value="800">800 mm²</option>
-                        <option value="1000">1000 mm²</option>
-                        <option value="1200" selected>1200 mm²</option>
-                        <option value="2000">2000 mm²</option>
-                        <option value="2500">2500 mm²</option>
-                        <option value="3000">3000 mm²</option>
-                        <option value="3500">3500 mm²</option>
-                        <option value="4500">4500 mm²</option>
-                    </select>
+                
+                <div class="form-group">
+                    <label for="area">Conductor Size (mm²)</label>
+                    <div class="input-wrapper">
+                        <select id="area">
+                            <option value="100">100</option>
+                            <option value="150">150</option>
+                            <option value="185">185</option>
+                            <option value="240">240</option>
+                            <option value="400" selected>400</option>
+                            <option value="600">600</option>
+                            <option value="800">800</option>
+                            <option value="1000">1000</option>
+                            <option value="1200">1200</option>
+                            <option value="1600">1600</option>
+                            <option value="2000">2000</option>
+                            <option value="2500">2500</option>
+                        </select>
+                    </div>
                 </div>
-
-                <div class="input-group">
+                
+                <div class="form-group">
+                    <label for="bonding">Bonding Method</label>
+                    <div class="input-wrapper">
+                        <select id="bonding">
+                            <option value="Cross Bonding" selected>Cross Bonding</option>
+                            <option value="Single Point Bonding">Single Point Bonding</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
                     <label for="circuits">Number of Circuits</label>
-                    <div class="range-wrapper">
-                        <input type="number" id="circuits" value="1" min="1" max="10">
+                    <div class="input-wrapper">
+                        <input type="number" id="circuits" value="1" min="1">
                     </div>
                 </div>
-
-                <div class="input-group">
+                
+                <div class="form-group">
                     <label for="depth">Burial Depth (mm)</label>
-                    <input type="number" id="depth" value="1200" step="100">
-                </div>
-
-                <div class="input-group">
-                    <label for="pf">Power Factor (0.0 - 1.0)</label>
-                    <input type="number" id="pf" value="0.9" step="0.01" min="0" max="1">
-                </div>
-
-                <!-- Button removed as per request -->
-
-            </section>
-
-            <section class="result-section glass-panel">
-                <h2>Results</h2>
-                <div id="error-message" class="error-box hidden"></div>
-
-                <div class="result-card">
-                    <span class="result-label">Allowable Current</span>
-                    <div class="result-value-wrapper">
-                        <span id="result-ampere" class="result-value">--</span>
-                        <span class="unit">A</span>
+                    <div class="input-wrapper">
+                        <input type="number" id="depth" value="1500" min="1">
                     </div>
                 </div>
-
-                <div class="result-card">
-                    <span class="result-label">Transmission Capacity</span>
-                    <div class="result-value-wrapper">
-                        <span id="result-mva" class="result-value">--</span>
-                        <span class="unit">MVA</span>
+                
+                <div class="form-group">
+                    <label for="pf">Power Factor</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="pf" value="0.9" min="0.01" max="1" step="0.01">
                     </div>
                 </div>
-
-                <div class="info-box">
-                    <p>Based on steady-state thermal rating at 90°C conductor temp.</p>
+            </div>
+            
+            <div class="outputs-section">
+                <div class="output-card main-output">
+                    <span class="output-label">Current Ratings (I)</span>
+                    <span class="output-value" id="out-current">0.0 A</span>
                 </div>
-            </section>
-        </main>
+                <div class="power-outputs">
+                    <div class="output-card sub-output">
+                        <span class="output-label">Apparent Power (S)</span>
+                        <span class="output-value" id="out-apparent">0.0 MVA</span>
+                    </div>
+                    <div class="output-card sub-output">
+                        <span class="output-label">Active Power (P)</span>
+                        <span class="output-value" id="out-active">0.0 MW</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Based on an ambient temperature of 25 degrees</p>
+            <p>and a soil thermal resistance of 0.9</p>
+            <p class="brand">Gaon Cable Co., Ltd.</p>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>
-
 </html>
